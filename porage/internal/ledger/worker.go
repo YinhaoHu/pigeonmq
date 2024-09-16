@@ -79,6 +79,11 @@ func (l *Ledger) flush() error {
 		return err
 	}
 
+	if len(flushedEntryMetadata) == 0 {
+		pkg.Logger.Debugf("Ledger %d no entry to flush", l.ledgerID)
+		return nil
+	}
+
 	// Write to index
 	for _, entryMetadata := range flushedEntryMetadata {
 		indexValue := index.IndexValue{

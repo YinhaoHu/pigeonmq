@@ -96,6 +96,7 @@ func (s *PorageRPCServiceServer) CloseLedger(ctx context.Context, in *pb.CloseLe
 	return nil, err
 }
 
+// LedgerLength returns the length of a ledger.
 func (s *PorageRPCServiceServer) LedgerLength(ctx context.Context, in *pb.LedgerLengthRequest) (*pb.LedgerLengthResponse, error) {
 	ledger := s.ledgerControl.GetLedger(in.LedgerId)
 	if ledger == nil {

@@ -5,7 +5,6 @@ import (
 	"errors"
 	"os"
 	"porage/internal/pkg"
-	"strconv"
 
 	"github.com/dgraph-io/badger/v3"
 )
@@ -37,9 +36,12 @@ func NewIndex(ledgerID uint64) (*Index, error) {
 func (i *Index) Put(entryID int, value *IndexValue) error {
 	// Write entryID as key and offset as value to myBadger.
 	err := i.db.Update(func(txn *badger.Txn) error {
-		key := []byte(strconv.Itoa(entryID))
+		key, err := pkg.Int64ToBytes(int64(entryID))
+		if err != nil {
+			return err
+		}
 		value := value.serialize()
-		err := txn.Set(key, value)
+		err = txn.Set(key, value)
 		return err
 	})
 	return err
@@ -49,7 +51,10 @@ func (i *Index) Put(entryID int, value *IndexValue) error {
 func (i *Index) Get(entryID int) (*IndexValue, error) {
 	var value *IndexValue = nil
 	err := i.db.View(func(txn *badger.Txn) error {
-		key := []byte(strconv.Itoa(entryID))
+		key, err := pkg.Int64ToBytes(int64(entryID))
+		if err != nil {
+			return err
+		}
 		item, err := txn.Get(key)
 		if errors.Is(err, badger.ErrKeyNotFound) {
 			return nil
@@ -85,10 +90,11 @@ func (i *Index) LastItem() (entryID int, indexValue *IndexValue, err error) {
 			return nil
 		}
 		item := it.Item()
-		entryID, err = strconv.Atoi(string(item.Key()))
+		gotEntryID, err := pkg.BytesToInt64(item.Key())
 		if err != nil {
 			return err
 		}
+		entryID = int(gotEntryID)
 		indexValue = &IndexValue{}
 		err = item.Value(func(val []byte) error {
 			indexValue.deserialize(val)

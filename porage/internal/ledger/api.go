@@ -131,6 +131,7 @@ func (l *Ledger) GetEntry(entryID int) (*pkg.LedgerEntry, error) {
 // Length returns the number of entries in the ledger.
 func (l *Ledger) Length() (int, error) {
 	lastEntryID, indexValue, err := l.index.LastItem()
+	pkg.Logger.Debugf("Length: ledgerID=%d, lastEntryID=%d", l.ledgerID, lastEntryID)
 	if err != nil {
 		return -1, err
 	}
