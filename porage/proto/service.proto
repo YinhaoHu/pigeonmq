@@ -1,0 +1,88 @@
+syntax = "proto3";
+ 
+option go_package = "porage/proto/service";
+ 
+package porageservice;
+
+import "google/protobuf/empty.proto";
+
+service PorageService {
+    // CreateLedger creates a new ledger. If a ledger with the same ID already exists, error is returned.
+    rpc CreateLedger(CreateLedgerRequest) returns (google.protobuf.Empty) {}
+
+    // AppendEntryOnLedger appends an entry to the ledger.
+    rpc AppendEntryOnLedger(AppendEntryOnLedgerRequest) returns (AppendEntryOnLedgerResponse) {}
+
+    // GetEntryFromLedger retrieves an entry from the ledger.
+    rpc GetEntryFromLedger(GetEntryFromLedgerRequest) returns (GetEntryFromLedgerResponse) {}
+
+    // CloseLedger closes a ledger.
+    rpc CloseLedger(CloseLedgerRequest) returns (google.protobuf.Empty) {}
+
+    // LedgerLength returns the length of the ledger.
+    rpc LedgerLength(LedgerLengthRequest) returns (LedgerLengthResponse) {}
+
+    // ListLedgers lists all the ledgers.
+    rpc ListLedgers(google.protobuf.Empty) returns (ListLedgersResponse) {}
+
+    // ListWorkers lists all the workers. 
+    rpc ListWorkers(google.protobuf.Empty) returns (ListWorkersResponse) {}
+}
+
+// CreateLedgerRequest is the request message for the CreateLedger RPC.
+message CreateLedgerRequest {
+    uint64 ledger_id = 1;
+}
+
+// AppendEntryOnLedgerRequest is the request message for the PutEntryOnLedger RPC.
+message AppendEntryOnLedgerRequest {
+    uint64 ledger_id = 1;
+    bytes payload = 2;
+}
+ 
+// AppendEntryOnLedgerResponse is the response message for the PutEntryOnLedger RPC.
+message AppendEntryOnLedgerResponse {
+    int64 entry_id = 1;
+}
+
+// GetEntryFromLedgerRequest is the request message for the GetEntryFromLedger RPC.
+message GetEntryFromLedgerRequest {
+    uint64 ledger_id = 1;
+    int64 entry_id = 2;
+}
+
+// GetEntryFromLedgerResponse is the response message for the GetEntryFromLedger RPC.
+message GetEntryFromLedgerResponse {
+    bytes payload = 1;
+}
+
+// CloseLedgerRequest is the request message for the CloseLedger RPC.
+message CloseLedgerRequest {
+    uint64 ledger_id = 1;
+}
+
+// ListLedgersResponse is the response message for the ListLedgers RPC.
+message ListLedgersResponse {
+    repeated uint64 ledger_ids = 1;
+}
+ 
+// ListWorkersResponse is the response message for the ListWorkers RPC. A map from worker name(string) to 
+// description(WorkerDescription) is returned.
+message ListWorkersResponse {
+    map<string, WorkerDescription> workers = 1;
+}
+
+// WorkerDescription is the description of a worker.
+message WorkerDescription {
+    string description = 1;
+}
+
+// LedgerLengthRequest is the request message for the LedgerLength RPC.
+message LedgerLengthRequest {
+    uint64 ledger_id = 1;
+}
+
+// LedgerLengthResponse is the response message for the LedgerLength RPC.
+message LedgerLengthResponse {
+    int64 length = 1;
+}

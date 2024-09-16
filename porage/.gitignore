@@ -1,0 +1,8 @@
+# Temporary files
+_*
+
+# Go applications for experimental purposes
+cmd/try
+
+# Testing coverage
+coverage
