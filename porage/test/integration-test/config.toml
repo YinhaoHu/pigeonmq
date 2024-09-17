@@ -64,7 +64,7 @@ message_buffer_busy_threshold = 15728640 # 15 MiB
 flush_rate = 50000
 
 # FlushInterval is the interval (in seconds) at which the entry logger will flush its buffer to disk.
-flush_interval = 3
+flush_interval = 1
 
 [IndexFile]
 # StoragePath is the path to the directory where index files are stored.

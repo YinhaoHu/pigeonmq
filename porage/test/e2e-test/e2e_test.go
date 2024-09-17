@@ -61,7 +61,7 @@ func startPorageServerInBackground() error {
 	server := server.NewPorageServer(config)
 	serverAddr = fmt.Sprintf("localhost:%d", config.Server.GRPCPort)
 	go server.Start()
-	time.Sleep(1 * time.Second)
+	time.Sleep(3 * time.Second)
 	return nil
 }
 

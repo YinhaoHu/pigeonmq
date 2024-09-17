@@ -5,10 +5,10 @@
 host = "localhost"
 
 # Port is the port for the server to listen on.
-port = 32900
+port = 32910
 
 # GRPCPort is the port for the gRPC server to listen on.
-grpc_port = 32901
+grpc_port = 32911
 
 
 [Journal]
