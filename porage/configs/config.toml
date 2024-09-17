@@ -14,7 +14,7 @@ grpc_port = 32901
 [Journal]
 # StoragePath is the path to the directory where the journal files are stored.
 # Example: "/var/lib/pigeonmq/journal"
-storage_path = "./_data/journal"
+storage_path = "/var/lib/pigeonmq/journal"
 
 # SegmentSoftThreshold is the threshold (in bytes) at which the journal will create a new segment.
 # A higher threshold means larger segments before rollover.
@@ -49,7 +49,7 @@ trim_threshold = 300000
 [EntryLogger]
 # StoragePath is the path to the directory where the entry logger files are stored.
 # Example: "/var/lib/pigeonmq/entrylogger"
-storage_path = "./_data/entry-logger"
+storage_path = "/var/lib/pigeonmq/entrylogger"
 
 # MessageBufferSize is the size (in bytes) of the message buffer used by the entry logger.
 # Larger buffers can improve I/O performance by reducing the frequency of disk writes.
@@ -69,7 +69,7 @@ flush_interval = 3
 [IndexFile]
 # StoragePath is the path to the directory where index files are stored.
 # Example: "/var/lib/pigeonmq/index"
-storage_path = "./_data/index"
+storage_path = "/var/lib/pigeonmq/index"
 
 # MemtableSize is the size (in bytes) of the in-memory memtable used for indexing. 
 memtable_size = 16777216 # 16 MiB
@@ -78,7 +78,7 @@ memtable_size = 16777216 # 16 MiB
 [Ledger]
 # StoragePath is the path to the directory where ledger files are stored.
 # Example: "/var/lib/pigeonmq/ledger"
-storage_path = "./_data/ledger"
+storage_path = "/var/lib/pigeonmq/ledger"
 
 [Log]
 # Level is the log level for the logger.
