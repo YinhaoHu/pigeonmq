@@ -1,1 +1,93 @@
-../../configs/config.toml
+# Configuration file for Porage
+
+[Server]
+# Host is the host address for the server to listen on.
+host = "localhost"
+
+# Port is the port for the server to listen on.
+port = 32900
+
+# GRPCPort is the port for the gRPC server to listen on.
+grpc_port = 32901
+
+
+[Journal]
+# StoragePath is the path to the directory where the journal files are stored.
+# Example: "/var/lib/pigeonmq/journal"
+storage_path = "./_data/journal"
+
+# SegmentSoftThreshold is the threshold (in bytes) at which the journal will create a new segment.
+# A higher threshold means larger segments before rollover.
+segment_soft_threshold = 10485760 # 10 MiB
+
+# MessageBufferSize is the size (in bytes) of the message buffer used for batching journal entries.
+# Increasing this value can improve performance but will use more memory.
+message_buffer_size = 16777216 # 16 MiB
+
+# MessageBufferBusyThreshold is the threshold (in bytes) at which the message buffer is considered busy.
+# If the buffer size exceeds this threshold, new messages will be blocked or dropped until it clears.
+message_buffer_busy_threshold = 15728640 # 15 MiB
+
+# GroupCommitThreshold is the threshold (in number of entries) for triggering group commits.
+# When the combined size of messages in the buffer exceeds this threshold, a group commit is performed.
+group_commit_threshold = 500000
+
+# GroupCommitInterval is the interval (in milliseconds) at which the journal will perform group commits.
+# When the group commit threshold is not met, the journal will commit all pending messages at this interval.
+group_commit_interval = 1000
+
+# TrimInterval is the interval (in seconds) at which the journal will trim old segments.
+trim_interval = 3
+
+
+[Memtable]
+# TrimThreshold is the threshold (number of entries) at which the ledger will trim entries from the memtable.
+# A lower threshold means more frequent trimming.
+trim_threshold = 300000
+
+
+[EntryLogger]
+# StoragePath is the path to the directory where the entry logger files are stored.
+# Example: "/var/lib/pigeonmq/entrylogger"
+storage_path = "./_data/entry-logger"
+
+# MessageBufferSize is the size (in bytes) of the message buffer used by the entry logger.
+# Larger buffers can improve I/O performance by reducing the frequency of disk writes.
+message_buffer_size = 16777216 # 16 MiB
+
+# MessageBufferBusyThreshold is the threshold (in bytes) at which the message buffer is considered busy.
+# If this threshold is reached, the entry logger will stop accepting new messages until space clears up.
+message_buffer_busy_threshold = 15728640 # 15 MiB
+
+# FlushRate is the number of entries processed before the entry logger flushes its buffer to disk.
+# This helps control the frequency of flushes and can be adjusted based on workload.
+flush_rate = 50000
+
+# FlushInterval is the interval (in seconds) at which the entry logger will flush its buffer to disk.
+flush_interval = 3
+
+[IndexFile]
+# StoragePath is the path to the directory where index files are stored.
+# Example: "/var/lib/pigeonmq/index"
+storage_path = "./_data/index"
+
+# MemtableSize is the size (in bytes) of the in-memory memtable used for indexing. 
+memtable_size = 16777216 # 16 MiB
+
+
+[Ledger]
+# StoragePath is the path to the directory where ledger files are stored.
+# Example: "/var/lib/pigeonmq/ledger"
+storage_path = "./_data/ledger"
+
+[Log]
+# Level is the log level for the logger.
+# Valid values are "debug", "info", "warn", "error".
+level = "info"
+
+# Output is the output for the logger.
+# Valid values are "stdout", "stderr", or a file path.
+output = "stdout"
+
+# WithColor enables colorized output for the logger.
+with_color = true

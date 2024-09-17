@@ -9,7 +9,8 @@ import (
 )
 
 type TestLogger struct {
-	mutex sync.Mutex
+	mutex                sync.Mutex
+	progressLogFrequency int
 }
 
 var Logger *TestLogger = makeTestLogger()
@@ -31,5 +32,18 @@ func (l *TestLogger) FatalIfErr(err error, format string, args ...interface{}) {
 	if err != nil {
 		l.Logf(format, args...)
 		panic(err)
+	}
+}
+
+func (l *TestLogger) SetProgressLogFrequency(frequency int) {
+	l.progressLogFrequency = frequency
+}
+
+func (l *TestLogger) ReportProgress(current, total int) {
+	if l.progressLogFrequency == 0 {
+		return
+	}
+	if current%l.progressLogFrequency == 0 {
+		l.Logf("Progress: %d/%d(%.2f%%)", current, total, float64(current)/float64(total)*100)
 	}
 }

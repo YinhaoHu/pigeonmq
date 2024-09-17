@@ -14,11 +14,12 @@ import (
 )
 
 const (
-	serverConfigFilePath = "./config.toml"
-	ledgerID             = uint64(1)
-	nIterations          = 100000
-	rwLogFrequency       = nIterations / 10
-	dataDir              = "./_data"
+	serverConfigFilePath              = "./config.toml"
+	ledgerID                          = uint64(0)
+	nIterations                       = 100000
+	rwLogFrequency                    = nIterations / 10
+	dataDir                           = "./_data"
+	getterGoroutineAssignedEntryCount = 100
 )
 
 var (
@@ -81,8 +82,9 @@ func testAppendEntry(ctx context.Context) {
 	wg := sync.WaitGroup{}
 	wg.Add(nIterations)
 	startTime := time.Now()
+	utilities.Logger.SetProgressLogFrequency(nIterations / 10)
 	for i := 0; i < nIterations; i++ {
-		logWithFrequency(i)
+		utilities.Logger.ReportProgress(i+1, nIterations)
 		payload := generatePayloadWithEntryID(i)
 		go func() {
 			entryID, err := porageClient.AppendEntryOnLedger(ctx, ledgerID, payload)
@@ -95,11 +97,8 @@ func testAppendEntry(ctx context.Context) {
 	utilities.Logger.Logf("AppendEntry done, elapsed time: %v", time.Since(startTime))
 }
 
-func testGetEntry(ctx context.Context) {
-	utilities.Logger.Logf("Testing GetEntry")
-	startTime := time.Now()
-	for i := 0; i < nIterations; i++ {
-		logWithFrequency(i)
+func getterGoroutine(start int, wg *sync.WaitGroup, ctx context.Context) {
+	for i := start; i < start+getterGoroutineAssignedEntryCount; i++ {
 		payload, err := porageClient.GetEntryFromLedger(ctx, ledgerID, i)
 		utilities.Logger.FatalIfErr(err, "Failed to get entry")
 		expectedPayload, ok := expectedDB.Load(i)
@@ -110,7 +109,21 @@ func testGetEntry(ctx context.Context) {
 			panic("Failed to get entry")
 		}
 	}
-	utilities.Logger.Logf("GetEntry done, elapsed time: %v", time.Since(startTime))
+	wg.Done()
+}
+
+func testGetEntry(ctx context.Context) {
+	utilities.Logger.Logf("Testing GetEntry")
+	startTime := time.Now()
+	utilities.Logger.SetProgressLogFrequency(nIterations / 10)
+	wg := sync.WaitGroup{}
+	for i := 0; i < nIterations; i += getterGoroutineAssignedEntryCount {
+		utilities.Logger.ReportProgress(i, nIterations)
+		wg.Add(1)
+		go getterGoroutine(i, &wg, ctx)
+	}
+	wg.Wait()
+	utilities.Logger.Logf("GetEntry done, elapsed time: %v(Each goroutine gets 100 entries)", time.Since(startTime))
 }
 
 func testGetLedgerLength(ctx context.Context) {
@@ -146,10 +159,4 @@ func testCloseEntry(ctx context.Context) {
 
 func generatePayloadWithEntryID(entryID int) []byte {
 	return []byte(fmt.Sprintf("Entry ID: %16d", entryID))
-}
-
-func logWithFrequency(i int) {
-	if (i+1)%rwLogFrequency == 0 {
-		utilities.Logger.Logf("Progress: %d/%d(%.2f%%)", i+1, nIterations, float64(i+1)/float64(nIterations)*100)
-	}
 }

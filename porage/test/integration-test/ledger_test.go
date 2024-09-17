@@ -29,11 +29,12 @@ import (
 //  5. Journal Trim.
 
 var (
-	ledgerID = uint64(0)
-	dataDir  = "./_data"
+	dataDir = "./_data"
 )
 
 func TestNewLedger(t *testing.T) {
+	utilities.Logger.Logf("TestNewLedger: Start.")
+	const ledgerID = uint64(1)
 	const nIterations = 1_000_000
 	var nIterationsWord = num2words.Convert(nIterations)
 
@@ -43,23 +44,23 @@ func TestNewLedger(t *testing.T) {
 		panic(err)
 	}
 	setup(config)
+	defer clean()
 
 	ledger, err := ledger.NewLedger(ledgerID)
 	utilities.Logger.FatalIfErr(err, "Failed to create new ledger: %v", err)
 
 	expectedDb := sync.Map{}
-	logFrequency := nIterations / 10
 
 	// Check: Write Entry
+	utilities.Logger.Logf("Testing write entries.")
+	utilities.Logger.SetProgressLogFrequency(nIterations / 10)
 	writeWaitGroup := sync.WaitGroup{}
 	writeConsumedTime := time.Duration(0)
 	writeTimeBegin := time.Now()
 	writeWaitGroup.Add(nIterations)
-	for i := 1; i <= nIterations; i++ {
-		if i%logFrequency == 0 {
-			utilities.Logger.Logf("Writing entry %d/%d. Progress: %.2f%%", i, nIterations, (float64(i)/float64(nIterations))*100)
-		}
-		entryID := i - 1
+	for i := 0; i < nIterations; i++ {
+		utilities.Logger.ReportProgress(i+1, nIterations)
+		entryID := i
 		expectedEntryPayload := generatePayloadWithEntryID(entryID)
 
 		go func() {
@@ -75,11 +76,11 @@ func TestNewLedger(t *testing.T) {
 	utilities.Logger.Logf("All writes completed.")
 
 	// Check: Get Entry
+	utilities.Logger.Logf("Testing read entries.")
+	utilities.Logger.SetProgressLogFrequency(nIterations / 10)
 	readConsumedTime := time.Duration(0)
 	for i := 1; i <= nIterations; i++ {
-		if i%logFrequency == 0 {
-			utilities.Logger.Logf("Reading entry %d/%d. Progress: %.2f%%", i, nIterations, (float64(i)/float64(nIterations))*100)
-		}
+		utilities.Logger.ReportProgress(i, nIterations)
 
 		entryID := i - 1
 		thisReadBeginTime := time.Now()
@@ -94,10 +95,10 @@ func TestNewLedger(t *testing.T) {
 		}
 		expectPayloadEq(t, expectedEntryPayload.([]byte), entry.Payload)
 	}
-
 	utilities.Logger.Logf("All reads completed.")
 
 	// Check: Get non-existent entry
+	utilities.Logger.Logf("Testing get non-existent entry.")
 	nonExistedEntryID := nIterations + 1
 	entry, err := ledger.GetEntry(nonExistedEntryID)
 	if entry != nil || err != nil {
@@ -106,17 +107,17 @@ func TestNewLedger(t *testing.T) {
 	}
 
 	// Check: Trim journal
-	utilities.Logger.Logf("Wait for journal trim.")
+	utilities.Logger.Logf("Testing journal trim.")
 	time.Sleep(1 * time.Second)
 	files, err := os.ReadDir(config.Journal.StoragePath)
 	utilities.Logger.FatalIfErr(err, "Failed to read journal storage directory: %v", err)
 	utilities.Logger.Logf("All journal segment files are trimmed.")
-
 	if len(files) != 1 {
 		t.Fatalf("Journal storage directory does not only have current segment file. Found %d files.", len(files))
 	}
 
 	// Check: Close ledger
+	utilities.Logger.Logf("Testing close ledger.")
 	err = ledger.Close()
 	utilities.Logger.FatalIfErr(err, "Failed to close ledger: %v", err)
 
@@ -125,6 +126,8 @@ func TestNewLedger(t *testing.T) {
 }
 
 func TestRecovery(t *testing.T) {
+	utilities.Logger.Logf("TestRecovery: Start.")
+	const ledgerID = uint64(2)
 	const nIterations = 500_000
 	const nJournalSegments = 2
 
@@ -144,7 +147,9 @@ func TestRecovery(t *testing.T) {
 		panic(err)
 	}
 
-	os.MkdirAll(config.Journal.StoragePath, 0755)
+	if err := os.MkdirAll(config.Journal.StoragePath, 0755); err != nil {
+		panic(err)
+	}
 	for segmentID := 0; segmentID < nJournalSegments; segmentID++ {
 		// Create journal file.
 		utilities.Logger.Logf("Generating journal file %v.", segmentID)
@@ -179,14 +184,15 @@ func TestRecovery(t *testing.T) {
 	}
 
 	setup(config)
+	defer clean()
 
 	// Recover.
-	utilities.Logger.Logf("Recovering ledgers.")
+	utilities.Logger.Logf("Testing recovery.")
 	ledgers, err := recovery.Recover()
 	utilities.Logger.FatalIfErr(err, "Failed to recover ledgers: %v", err)
 
 	// Check.
-	utilities.Logger.Logf("Checking recovered ledger.")
+	utilities.Logger.Logf("Testing recovered ledgers.")
 	ledger := ledgers[0]
 	for i := 0; i < nIterations*nJournalSegments; i++ {
 		entryID := i
@@ -219,4 +225,9 @@ func setup(config *pkg.Config) {
 	entrylogger.Startup(&config.EntryLogger)
 	journal.Startup(&config.Journal)
 	ledger.Startup(config)
+}
+
+func clean() {
+	journal.Stop()
+	ledger.Stop()
 }
