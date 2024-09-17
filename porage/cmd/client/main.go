@@ -13,6 +13,7 @@ import (
 
 	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
+	"google.golang.org/grpc/status"
 )
 
 var (
@@ -123,7 +124,7 @@ func handleCreateLedger(parts []string, ctx context.Context) {
 	}
 	err = porageClient.CreateLedger(ctx, ledgerID)
 	if err != nil {
-		fmt.Printf("Failed to create ledger: %v\n", err)
+		fmt.Printf("Failed to create ledger: %v\n", status.Convert(err).Message())
 	} else {
 		fmt.Println("Ledger created successfully")
 	}
@@ -142,7 +143,7 @@ func handleAppendEntry(parts []string, ctx context.Context) {
 	payload := parts[2]
 	entryID, err := porageClient.AppendEntryOnLedger(ctx, ledgerID, []byte(payload))
 	if err != nil {
-		fmt.Printf("Failed to append entry: %v\n", err)
+		fmt.Printf("Failed to append entry: %v\n", status.Convert(err).Message())
 	} else {
 		fmt.Printf("Entry appended successfully, Entry ID: %d\n", entryID)
 	}
@@ -165,7 +166,7 @@ func handleGetEntry(parts []string, ctx context.Context) {
 	}
 	payload, err := porageClient.GetEntryFromLedger(ctx, ledgerID, entryID)
 	if err != nil {
-		fmt.Printf("Failed to get entry: %v\n", err)
+		fmt.Printf("Failed to get entry: %v\n", status.Convert(err).Message())
 	} else {
 		fmt.Printf("Entry retrieved: %s\n", string(payload))
 	}
@@ -183,7 +184,7 @@ func handleCloseLedger(parts []string, ctx context.Context) {
 	}
 	err = porageClient.CloseLedger(ctx, ledgerID)
 	if err != nil {
-		fmt.Printf("Failed to close ledger: %v\n", err)
+		fmt.Printf("Failed to close ledger: %v\n", status.Convert(err).Message())
 	} else {
 		fmt.Println("Ledger closed successfully")
 	}
@@ -196,7 +197,7 @@ func handleListLedgers(parts []string, ctx context.Context) {
 	}
 	ledgerIDs, err := porageClient.ListLedgers(ctx)
 	if err != nil {
-		fmt.Printf("Failed to list ledgers: %v\n", err)
+		fmt.Printf("Failed to list ledgers: %v\n", status.Convert(err).Message())
 		return
 	}
 
@@ -218,7 +219,7 @@ func handleListWorkers(parts []string, ctx context.Context) {
 	}
 	workerDescriptions, err := porageClient.GetWorkerDescriptions(ctx)
 	if err != nil {
-		fmt.Printf("Failed to list workers: %v\n", err)
+		fmt.Printf("Failed to list workers: %v\n", status.Convert(err).Message())
 		return
 	}
 
@@ -247,7 +248,7 @@ func handleLedgerLength(parts []string, ctx context.Context) {
 	}
 	length, err := porageClient.GetLedgerLength(ctx, ledgerID)
 	if err != nil {
-		fmt.Printf("Failed to get ledger length: %v\n", err)
+		fmt.Printf("Failed to get ledger length: %v\n", status.Convert(err).Message())
 	} else {
 		fmt.Printf("Ledger length: %d\n", length)
 	}
