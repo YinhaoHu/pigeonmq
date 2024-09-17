@@ -112,6 +112,11 @@ func (i *Index) Delete() error {
 	return err
 }
 
+// Close closes the index file database.
+func (i *Index) Close() error {
+	return i.db.Close()
+}
+
 type IndexValue struct {
 	Offset int
 	Size   int

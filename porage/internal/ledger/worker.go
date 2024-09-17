@@ -31,8 +31,7 @@ func (l *Ledger) persistenceWorker() {
 	nWrittenEntry := uint64(0)
 	shouldFlushInterval := time.Duration(myConfig.EntryLogger.FlushInterval) * time.Second
 	shouldFlushIntervalTicker := time.NewTicker(shouldFlushInterval)
-	closed := false
-	for !closed {
+	for {
 		pkg.Logger.Debugf("Ledger %d worker is running", l.ledgerID)
 		shouldFlush := false
 		select {
@@ -56,9 +55,17 @@ func (l *Ledger) persistenceWorker() {
 			pkg.Logger.Debugf("Ledger %d worker: should flush triggerd by flush interval", l.ledgerID)
 		case <-l.persistenceWorkerDescription.StopChannel():
 			pkg.Logger.Infof("%s: stopped", workerName)
-			l.persistenceWorkerDescription.StopResponseChannel() <- struct{}{}
+
 			localWorkerControl.UnregisterWorker(workerName)
-			closed = true
+			if err := l.index.Close(); err != nil {
+				pkg.Logger.Errorf("Ledger %d failed to close index: %v", l.ledgerID, err)
+			}
+			if err := l.entryLogger.Close(); err != nil {
+				pkg.Logger.Errorf("Ledger %d failed to close entry logger: %v", l.ledgerID, err)
+			}
+
+			l.persistenceWorkerDescription.StopResponseChannel() <- struct{}{}
+			return
 		}
 
 		if shouldFlush {

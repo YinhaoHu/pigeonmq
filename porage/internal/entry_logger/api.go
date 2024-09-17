@@ -108,3 +108,11 @@ func (el *EntryLogger) Flush() ([]*EntryMetadata, error) {
 func (el *EntryLogger) Truncate(size int64) error {
 	return el.file.Truncate(size)
 }
+
+// Close closes the entry logger.
+func (el *EntryLogger) Close() error {
+	if el.file == nil {
+		return nil
+	}
+	return el.file.Close()
+}
