@@ -88,6 +88,10 @@ func completer(d prompt.Document) []prompt.Suggest {
 }
 
 func handleCommand(input string) {
+	if input == "" {
+		return
+	}
+
 	parts := strings.Fields(input)
 	if len(parts) == 0 {
 		fmt.Println("Invalid command")
