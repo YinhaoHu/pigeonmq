@@ -274,7 +274,7 @@ func showHelp(parts []string) {
 
 func isValidCommandUsageLen(parts []string, expectedLen int) bool {
 	if len(parts) != expectedLen {
-		fmt.Printf("Usage: %v", commandUsageMapping[parts[0]])
+		fmt.Printf("Usage: %v\n", commandUsageMapping[parts[0]])
 		return false
 	}
 	return true
