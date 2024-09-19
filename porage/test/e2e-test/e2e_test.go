@@ -17,6 +17,7 @@ const (
 	serverConfigFilePath              = "./config.toml"
 	ledgerID                          = uint64(0)
 	nIterations                       = 100000
+	nNewEntryAfterRecover             = 100
 	rwLogFrequency                    = nIterations / 10
 	dataDir                           = "./_data"
 	getterGoroutineAssignedEntryCount = 100
@@ -24,6 +25,8 @@ const (
 
 var (
 	serverAddr   string
+	serverConfig *pkg.Config
+	poraServer   *server.PoraServer   = nil
 	porageClient *porage.PorageClient = nil
 	expectedDB                        = sync.Map{}
 )
@@ -49,19 +52,32 @@ func TestE2E(t *testing.T) {
 	testCreateLedger(ctx)
 	testAppendEntry(ctx)
 	testGetEntry(ctx)
+	waitForEntryLoggerFlush()
 	testGetLedgerLength(ctx)
+
+	poraServer.Stop()
+	err = startPorageServerInBackground()
+	utilities.Logger.FatalIfErr(err, "Failed to start Porage server")
+	testAppendEntryAfterRecovery(ctx)
+	testGetEntryAfterRecovery(ctx)
+	waitForEntryLoggerFlush()
+	testGetLedgerLengthAfterRecovery(ctx)
+
 	testListWorkers(ctx)
 	testCloseEntry(ctx)
 }
 
 func startPorageServerInBackground() error {
-	config, err := pkg.ParseConfigFile(serverConfigFilePath)
-	if err != nil {
-		return err
+	var err error
+	if poraServer == nil {
+		serverConfig, err = pkg.ParseConfigFile(serverConfigFilePath)
+		if err != nil {
+			return err
+		}
+		poraServer = server.NewPorageServer(serverConfig)
+		serverAddr = fmt.Sprintf("localhost:%d", serverConfig.Server.GRPCPort)
 	}
-	server := server.NewPorageServer(config)
-	serverAddr = fmt.Sprintf("localhost:%d", config.Server.GRPCPort)
-	go server.Start()
+	go poraServer.Start()
 	time.Sleep(3 * time.Second)
 	return nil
 }
@@ -98,16 +114,59 @@ func testAppendEntry(ctx context.Context) {
 	utilities.Logger.Logf("AppendEntry done, elapsed time: %v", time.Since(startTime))
 }
 
+func testAppendEntryAfterRecovery(ctx context.Context) {
+	utilities.Logger.Logf("Testing AppendEntryAfterRecovery")
+
+	utilities.Logger.SetProgressLogFrequency(nNewEntryAfterRecover / 10)
+	for i := nIterations; i < nIterations+nNewEntryAfterRecover; i++ {
+		utilities.Logger.ReportProgress(i-nIterations, nNewEntryAfterRecover)
+		payload := generatePayloadWithEntryID(i)
+		entryID, err := porageClient.AppendEntryOnLedger(ctx, ledgerID, payload)
+		utilities.Logger.FatalIfErr(err, "Failed to append entry")
+		if entryID != i {
+			panicMsg := fmt.Sprintf("Failed to append entry. Expected: %d, Got: %d", i, entryID)
+			panic(panicMsg)
+		}
+		expectedDB.Store(entryID, payload)
+	}
+}
+
+func testGetEntryAfterRecovery(ctx context.Context) {
+	utilities.Logger.Logf("Testing GetEntryAfterRecovery")
+	startTime := time.Now()
+	utilities.Logger.SetProgressLogFrequency(nIterations / 10)
+	wg := sync.WaitGroup{}
+	for i := 0; i < nIterations+nNewEntryAfterRecover; i += getterGoroutineAssignedEntryCount {
+		utilities.Logger.ReportProgress(i, nIterations)
+		wg.Add(1)
+		go getterGoroutine(i, &wg, ctx)
+	}
+	wg.Wait()
+	utilities.Logger.Logf("GetEntryAfterRecovery done, elapsed time: %v(Each goroutine gets 100 entries)", time.Since(startTime))
+}
+
+func testGetLedgerLengthAfterRecovery(ctx context.Context) {
+	utilities.Logger.Logf("Testing GetLedgerLengthAfterRecovery")
+	ledgerLength, err := porageClient.GetLedgerLength(ctx, ledgerID)
+	utilities.Logger.FatalIfErr(err, "Failed to get ledger length")
+	if ledgerLength != nIterations+nNewEntryAfterRecover {
+		msg := fmt.Sprintf("Failed to get ledger length. Expected: %d, Got: %d", nIterations+nNewEntryAfterRecover, ledgerLength)
+		panic(msg)
+	}
+}
+
 func getterGoroutine(start int, wg *sync.WaitGroup, ctx context.Context) {
 	for i := start; i < start+getterGoroutineAssignedEntryCount; i++ {
 		payload, err := porageClient.GetEntryFromLedger(ctx, ledgerID, i)
 		utilities.Logger.FatalIfErr(err, "Failed to get entry")
 		expectedPayload, ok := expectedDB.Load(i)
 		if !ok {
-			panic("Failed to get entry")
+			panicMsg := fmt.Sprintf("Failed to get entry because entry %d is not in the expectedDB", i)
+			panic(panicMsg)
 		}
 		if string(payload) != string(expectedPayload.([]byte)) {
-			panic("Failed to get entry")
+			panicMsg := fmt.Sprintf("Failed to get entry. Expected: %s, Got: %s", string(expectedPayload.([]byte)), string(payload))
+			panic(panicMsg)
 		}
 	}
 	wg.Done()
@@ -132,7 +191,8 @@ func testGetLedgerLength(ctx context.Context) {
 	ledgerLength, err := porageClient.GetLedgerLength(ctx, ledgerID)
 	utilities.Logger.FatalIfErr(err, "Failed to get ledger length")
 	if ledgerLength != nIterations {
-		panic("Failed to get ledger length")
+		msg := fmt.Sprintf("Failed to get ledger length. Expected: %d, Got: %d", nIterations, ledgerLength)
+		panic(msg)
 	}
 }
 
@@ -160,4 +220,9 @@ func testCloseEntry(ctx context.Context) {
 
 func generatePayloadWithEntryID(entryID int) []byte {
 	return []byte(fmt.Sprintf("Entry ID: %16d", entryID))
+}
+
+func waitForEntryLoggerFlush() {
+	utilities.Logger.Logf("Waiting for entry logger flush")
+	time.Sleep(time.Duration(serverConfig.EntryLogger.FlushInterval)*time.Second + 1*time.Second)
 }

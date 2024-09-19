@@ -34,7 +34,7 @@ group_commit_threshold = 500000
 
 # GroupCommitInterval is the interval (in milliseconds) at which the journal will perform group commits.
 # When the group commit threshold is not met, the journal will commit all pending messages at this interval.
-group_commit_interval = 1000
+group_commit_interval = 1 # For e2e test, we set it to 1ms for `testAppendEntryAfterRecovery`
 
 # TrimInterval is the interval (in seconds) at which the journal will trim old segments.
 trim_interval = 3

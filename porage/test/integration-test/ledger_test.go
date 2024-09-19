@@ -44,6 +44,7 @@ func TestNewLedger(t *testing.T) {
 		panic(err)
 	}
 	setup(config)
+	journal.EnableTrimWorker()
 	defer clean()
 
 	ledger, err := ledger.NewLedger(ledgerID)
@@ -108,13 +109,13 @@ func TestNewLedger(t *testing.T) {
 
 	// Check: Trim journal
 	utilities.Logger.Logf("Testing journal trim.")
-	time.Sleep(1 * time.Second)
+	time.Sleep(time.Duration(config.EntryLogger.FlushInterval)*time.Second + time.Duration(config.Journal.TrimInterval)*time.Second)
 	files, err := os.ReadDir(config.Journal.StoragePath)
 	utilities.Logger.FatalIfErr(err, "Failed to read journal storage directory: %v", err)
-	utilities.Logger.Logf("All journal segment files are trimmed.")
 	if len(files) != 1 {
 		t.Fatalf("Journal storage directory does not only have current segment file. Found %d files.", len(files))
 	}
+	utilities.Logger.Logf("All journal segment files are trimmed.")
 
 	// Check: Close ledger
 	utilities.Logger.Logf("Testing close ledger.")
@@ -199,6 +200,10 @@ func TestRecovery(t *testing.T) {
 		entryPayload := generatePayloadWithEntryID(entryID)
 		entry, err := ledger.GetEntry(entryID)
 		utilities.Logger.FatalIfErr(err, "Failed to get entry: %v", err)
+		if entry == nil {
+			panicMsg := fmt.Sprintf("Entry %d not found.", entryID)
+			panic(panicMsg)
+		}
 		expectPayloadEq(t, entryPayload, entry.Payload)
 	}
 

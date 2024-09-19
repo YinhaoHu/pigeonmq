@@ -28,18 +28,20 @@ func Recover() ([]*ledger.Ledger, error) {
 		if err != nil {
 			return nil, err
 		}
-		fromEntryID, err := thisLedger.PrepareRecovery()
+		lastPersistEntryID, err := thisLedger.PrepareRecovery()
 		if err != nil {
 			return nil, err
 		}
 		ledgers = append(ledgers, thisLedger)
 		recoveryLedgerInfoMap[ledgerID] = &recoverLedgerInfo{
 			ledger:      thisLedger,
-			fromEntryID: fromEntryID,
+			fromEntryID: lastPersistEntryID + 1,
 		}
 	}
 
-	totalRecovered := 0
+	nTotalRecovered := 0
+	nJournalEntries := 0
+	nSkippedJournalEntries := 0
 	segmentIndex := 0
 	for {
 		journalEntries, nextSegmentIdx, err := journal.ReadJournal(segmentIndex)
@@ -48,12 +50,15 @@ func Recover() ([]*ledger.Ledger, error) {
 		}
 
 		for _, journalEntry := range journalEntries {
+			nJournalEntries++
 			recoverLedgerInfo, ok := recoveryLedgerInfoMap[journalEntry.Entry.LedgerID]
 			if !ok {
+				nSkippedJournalEntries++
 				continue
 			}
 
 			if journalEntry.Entry.EntryID < recoverLedgerInfo.fromEntryID {
+				nSkippedJournalEntries++
 				continue
 			}
 
@@ -62,9 +67,8 @@ func Recover() ([]*ledger.Ledger, error) {
 			if err := recoverLedgerInfo.ledger.PutEntryOnRecovery(journalEntry.Entry.Payload); err != nil {
 				return nil, err
 			}
+			nTotalRecovered += 1
 		}
-		totalRecovered += len(journalEntries)
-		pkg.Logger.Debugf("Recovered %d entries.", len(journalEntries))
 
 		if nextSegmentIdx < 0 {
 			break
@@ -72,6 +76,7 @@ func Recover() ([]*ledger.Ledger, error) {
 		segmentIndex = nextSegmentIdx
 	}
 
-	pkg.Logger.Infof("Recovery completed. Total recovered entries: %d.", totalRecovered)
+	journal.EnableTrimWorker()
+	pkg.Logger.Infof("Recovered %d entries from %d journal entries. Skipped %d journal entries.", nTotalRecovered, nJournalEntries, nSkippedJournalEntries)
 	return ledgers, nil
 }

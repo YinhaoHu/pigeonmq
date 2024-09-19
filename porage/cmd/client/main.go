@@ -27,8 +27,8 @@ var (
 		"list-ledgers":  "list-ledgers",
 		"list-workers":  "list-workers",
 		"ledger-len":    "ledger-len <ledger_id>",
-		"help":          "help",
-		"quit":          "quit",
+		"help":          "show help information",
+		"quit":          "exit the client",
 	}
 )
 

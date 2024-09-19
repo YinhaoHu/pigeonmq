@@ -103,6 +103,7 @@ func (l *Ledger) flush() error {
 		}
 		l.lastFlushedEntryID.Store(int64(entryMetadata.EntryID))
 	}
+
 	journal.UpdateLedgerFlushTime(l.ledgerID)
 	return nil
 }

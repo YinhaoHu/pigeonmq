@@ -11,9 +11,9 @@ import (
 )
 
 type Ledger struct {
-	ledgerID         uint64
-	entryCounter     int
-	entryCounterLock *sync.Mutex
+	ledgerID        uint64
+	nextEntryID     int
+	nextEntryIDLock *sync.Mutex
 
 	entryLogger *entrylogger.EntryLogger
 	index       *index.Index
@@ -43,7 +43,7 @@ func NewLedger(ledgerID uint64) (*Ledger, error) {
 	messageBuffer := make(chan *pkg.LedgerEntry, myConfig.EntryLogger.MessageBufferSize)
 	ledger := &Ledger{
 		ledgerID:           ledgerID,
-		entryCounterLock:   &sync.Mutex{},
+		nextEntryIDLock:    &sync.Mutex{},
 		entryLogger:        entryLogger,
 		index:              index,
 		memtable:           memtable,
@@ -67,9 +67,9 @@ func (l *Ledger) LedgerID() uint64 {
 
 // PutEntry puts the entry with entryID and payload into the ledger.
 func (l *Ledger) PutEntry(payload []byte) (int, error) {
-	l.entryCounterLock.Lock()
-	entryID := l.entryCounter
-	l.entryCounter++
+	l.nextEntryIDLock.Lock()
+	entryID := l.nextEntryID
+	l.nextEntryID++
 	pkg.Logger.Debugf("PutEntry: entryID=%d, payload=%s", entryID, string(payload))
 	// Write journal
 	pkg.Logger.Debugf("PutEntry: entryID=%d, payload=%s, put into journal", entryID, string(payload))
@@ -80,7 +80,7 @@ func (l *Ledger) PutEntry(payload []byte) (int, error) {
 	}
 	notificationRx, err := journal.AppendJournal(&journalEntryPayload)
 	if err != nil {
-		l.entryCounterLock.Unlock()
+		l.nextEntryIDLock.Unlock()
 		return -1, err
 	}
 
@@ -95,7 +95,7 @@ func (l *Ledger) PutEntry(payload []byte) (int, error) {
 	// Async flush
 	pkg.Logger.Debugf("PutEntry: entryID=%d, payload=%s, put into message buffer", entryID, string(payload))
 	l.messageBuffer <- ledgerEntry
-	l.entryCounterLock.Unlock()
+	l.nextEntryIDLock.Unlock()
 
 	notification := <-notificationRx
 	if l.memtable.MeetTrimThreshold() {
@@ -162,31 +162,31 @@ func (l *Ledger) Close() error {
 	return nil
 }
 
-// PrepareRecovery prepares the ledger for recovery. Return the fromEntryID for recovery.
+// PrepareRecovery prepares the ledger for recovery. Return the lastEntryID persisted in the ledger. If there is no entry, return -1.
 func (l *Ledger) PrepareRecovery() (int, error) {
-	fromEntryID, lastIndexValue, err := l.index.LastItem()
-	pkg.Logger.Infof("PrepareRecovery: ledgerID=%d, fromEntryID=%d", l.ledgerID, fromEntryID)
+	lastEntryID, lastIndexValue, err := l.index.LastItem()
+	pkg.Logger.Infof("PrepareRecovery: ledgerID=%d, lastEntryID=%d", l.ledgerID, lastEntryID)
 	if err != nil {
 		return -1, err
 	}
 	if lastIndexValue == nil {
-		return 0, nil
+		return -1, nil
 	}
 
-	l.entryCounter = fromEntryID
+	l.nextEntryID = lastEntryID + 1
 	validSize := lastIndexValue.Offset + lastIndexValue.Size
 	if err := l.entryLogger.Truncate(int64(validSize)); err != nil {
 		return -1, err
 	}
-	return fromEntryID, nil
+	return lastEntryID, nil
 }
 
 // PutEntryOnRecovery puts the entry with payload into the ledger during recovery.
 //
 // Expected to be called only in recovery.
 func (l *Ledger) PutEntryOnRecovery(payload []byte) error {
-	entryID := l.entryCounter
-	l.entryCounter++
+	entryID := l.nextEntryID
+	l.nextEntryID++
 	pkg.Logger.Debugf("PutEntryOnRecovery: entryID=%d, payload=%s", entryID, string(payload))
 
 	// Write to memtable

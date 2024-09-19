@@ -87,6 +87,11 @@ func ReadJournal(segmentIdx int) (entries []*JournalEntry, nextSegmentIdx int, e
 	return entries, nextSegmentIdx, nil
 }
 
+// EnableTrimWorker enables the trim worker.
+func EnableTrimWorker() {
+	enableTrimming.Store(true)
+}
+
 // GetWorkerDescriptions returns the workers description.
 func GetWorkerDescriptions() map[string]*pkg.WorkerDescription {
 	return localWorkerControl.GetWorkerDescriptions()

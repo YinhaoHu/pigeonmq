@@ -158,7 +158,8 @@ func makeSegmentFilePath() string {
 	return fmt.Sprintf("%s/%d%s", myConfig.StoragePath, time.Now().UnixNano(), journalFileSuffix)
 }
 
-// getSegmentFilePathList returns all the segment files in the storage path. The returned slice is sorted by the file name.
+// getSegmentFilePathList returns all the segment files in the storage path(including the current segment file).
+// The segment files are sorted by the creation time.
 func getSegmentFilePathList() ([]string, error) {
 	files, err := os.ReadDir(myConfig.StoragePath)
 	if err != nil {
