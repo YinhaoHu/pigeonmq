@@ -30,7 +30,8 @@ var (
 
 func TestE2E(t *testing.T) {
 	var err error
-	err = os.RemoveAll("./data")
+	// Clean up data directory
+	err = os.RemoveAll(dataDir)
 	utilities.Logger.FatalIfErr(err, "Failed to remove data directory")
 
 	// Start a Porage server
