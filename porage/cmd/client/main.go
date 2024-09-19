@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	"context"
 	"fmt"
 	"os"
@@ -9,8 +8,9 @@ import (
 	"strings"
 	"time"
 
-	"porage/pkg" // Import your porage package
+	"porage/pkg"
 
+	"github.com/c-bata/go-prompt"
 	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc/status"
@@ -27,23 +27,22 @@ var (
 		"list-ledgers":  "list-ledgers",
 		"list-workers":  "list-workers",
 		"ledger-len":    "ledger-len <ledger_id>",
-		"help":          "help"}
+		"help":          "help",
+		"quit":          "quit",
+	}
 )
 
 func main() {
-	// Initialize Cobra root command
 	var rootCmd = &cobra.Command{
 		Use:   "porage-client",
 		Short: "A client to interact with Porage service",
 		Long:  "A simple interactive client for Porage. Purpose is to demonstrate the usage of Porage service.",
-		Run:   runInteractiveShell,
+		Run:   runInteractivePrompt,
 	}
 
-	// Only one argument for the server address
 	var serverAddr string
 	rootCmd.PersistentFlags().StringVarP(&serverAddr, "server", "s", "localhost:32901", "Address of the Porage server")
 
-	// Connect to the Porage service
 	cobra.OnInitialize(func() {
 		var err error
 		porageClient, err = pkg.NewPorageClient(serverAddr)
@@ -53,31 +52,39 @@ func main() {
 		}
 	})
 
-	// Execute the root command
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
 }
 
-func runInteractiveShell(cmd *cobra.Command, args []string) {
+func runInteractivePrompt(cmd *cobra.Command, args []string) {
 	defer porageClient.Close()
 
-	reader := bufio.NewReader(os.Stdin)
 	fmt.Println("Welcome to Porage CLI. Type 'quit' to exit.")
-	for {
-		fmt.Print("-> ")
-		input, _ := reader.ReadString('\n')
-		input = strings.TrimSpace(input)
+	p := prompt.New(
+		executeCommand,
+		completer,
+		prompt.OptionPrefix("-> "),
+		prompt.OptionTitle("Porage CLI"),
+	)
+	p.Run()
+}
 
-		if input == "quit" {
-			fmt.Println("Exiting Porage CLI.")
-			break
-		}
+func executeCommand(input string) {
+	input = strings.TrimSpace(input)
+	handleCommand(input)
+}
 
-		// Handle the command
-		handleCommand(input)
+func completer(d prompt.Document) []prompt.Suggest {
+	commandSuggestions := []prompt.Suggest{}
+	for cmd, usage := range commandUsageMapping {
+		commandSuggestions = append(commandSuggestions, prompt.Suggest{
+			Text:        cmd,
+			Description: usage,
+		})
 	}
+	return prompt.FilterHasPrefix(commandSuggestions, d.GetWordBeforeCursor(), true)
 }
 
 func handleCommand(input string) {
@@ -107,12 +114,14 @@ func handleCommand(input string) {
 		handleLedgerLength(parts, ctx)
 	case "help":
 		showHelp(parts)
+	case "quit":
+		fmt.Println("Exiting Porage CLI")
+		os.Exit(0)
 	default:
 		fmt.Printf("Unknown command: %s. Type 'help' for more information.\n", parts[0])
 	}
 }
 
-// Separate function for handling create-ledger command
 func handleCreateLedger(parts []string, ctx context.Context) {
 	if !isValidCommandUsageLen(parts, 2) {
 		return
@@ -130,7 +139,6 @@ func handleCreateLedger(parts []string, ctx context.Context) {
 	}
 }
 
-// Separate function for handling append-entry command
 func handleAppendEntry(parts []string, ctx context.Context) {
 	if !isValidCommandUsageLen(parts, 3) {
 		return
@@ -149,7 +157,6 @@ func handleAppendEntry(parts []string, ctx context.Context) {
 	}
 }
 
-// Separate function for handling get-entry command
 func handleGetEntry(parts []string, ctx context.Context) {
 	if !isValidCommandUsageLen(parts, 3) {
 		return
@@ -172,7 +179,6 @@ func handleGetEntry(parts []string, ctx context.Context) {
 	}
 }
 
-// Separate function for handling close-ledger command
 func handleCloseLedger(parts []string, ctx context.Context) {
 	if !isValidCommandUsageLen(parts, 2) {
 		return
@@ -190,7 +196,6 @@ func handleCloseLedger(parts []string, ctx context.Context) {
 	}
 }
 
-// Separate function for handling list-ledgers command
 func handleListLedgers(parts []string, ctx context.Context) {
 	if !isValidCommandUsageLen(parts, 1) {
 		return
@@ -254,7 +259,6 @@ func handleLedgerLength(parts []string, ctx context.Context) {
 	}
 }
 
-// Separate function for handling help command
 func showHelp(parts []string) {
 	if !isValidCommandUsageLen(parts, 1) {
 		return
@@ -268,7 +272,6 @@ func showHelp(parts []string) {
 	renderTable([]string{"ID", "Command", "Usage"}, tableContent)
 }
 
-// Separate function to validate the command usage length
 func isValidCommandUsageLen(parts []string, expectedLen int) bool {
 	if len(parts) != expectedLen {
 		fmt.Printf("Usage: %v", commandUsageMapping[parts[0]])
