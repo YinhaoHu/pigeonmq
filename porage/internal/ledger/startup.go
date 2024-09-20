@@ -22,4 +22,5 @@ func Stop() {
 	for _, description := range localWorkerControl.GetWorkerDescriptions() {
 		description.Stop()
 	}
+	pkg.Logger.Infof("Ledgers stopped")
 }

@@ -15,4 +15,5 @@ func Startup(config *pkg.JournalConfig) {
 // Stop stops the workers.
 func Stop() {
 	closeWorkers()
+	pkg.Logger.Infof("Journal stopped")
 }

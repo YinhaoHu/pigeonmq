@@ -34,6 +34,7 @@ func newPorageRPCServiceServer(ledgerControl *control.LedgerControl, workerContr
 // stop stops the gRPC server gracefully.
 func (s *PorageRPCServiceServer) stop() {
 	s.grpcServer.GracefulStop()
+	pkg.Logger.Infof("gRPC server stopped")
 }
 
 // start starts the gRPC server.

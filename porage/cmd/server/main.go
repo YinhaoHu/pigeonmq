@@ -6,6 +6,7 @@ import (
 	"os/signal"
 	"porage/internal/pkg"
 	"porage/internal/server"
+	"syscall"
 
 	"github.com/spf13/cobra"
 )
@@ -27,15 +28,13 @@ func main() {
 
 	server := server.NewPorageServer(config)
 
-	// Wait for SIGINT (Ctrl+C) to stop the server
-	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt)
-	go func() {
-		<-c
-		server.Stop()
-	}()
+	go server.Start()
 
-	server.Start()
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGINT)
+	<-sigChan
+	pkg.Logger.Infof("Received SIGINT, stopping server")
+	server.Stop()
 }
 
 func parseCommandLine() error {
