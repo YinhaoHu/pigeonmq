@@ -1,4 +1,4 @@
-module porage
+module github.com/YinhaoHu/pigeonmq/porage
 
 go 1.23.0
 
