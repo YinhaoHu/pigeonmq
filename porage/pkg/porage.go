@@ -55,9 +55,9 @@ func (c *PorageClient) GetEntryFromLedger(ctx context.Context, ledgerID uint64, 
 	return response.GetPayload(), err
 }
 
-// CloseLedger closes a ledger.
-func (c *PorageClient) CloseLedger(ctx context.Context, ledgerID uint64) error {
-	_, err := c.rpcClient.CloseLedger(ctx, &pb.CloseLedgerRequest{LedgerId: ledgerID})
+// DeleteLedger closes a ledger.
+func (c *PorageClient) DeleteLedger(ctx context.Context, ledgerID uint64) error {
+	_, err := c.rpcClient.DeleteLedger(ctx, &pb.DeleteLedgerRequest{LedgerId: ledgerID})
 	return err
 }
 

@@ -91,8 +91,8 @@ func (s *PorageRPCServiceServer) GetEntryFromLedger(ctx context.Context, in *pb.
 	return response, nil
 }
 
-// CloseLedger closes a ledger.
-func (s *PorageRPCServiceServer) CloseLedger(ctx context.Context, in *pb.CloseLedgerRequest) (*emptypb.Empty, error) {
+// DeleteLedger closes a ledger.
+func (s *PorageRPCServiceServer) DeleteLedger(ctx context.Context, in *pb.DeleteLedgerRequest) (*emptypb.Empty, error) {
 	err := s.ledgerControl.RemoveLedger(in.LedgerId)
 	return nil, err
 }

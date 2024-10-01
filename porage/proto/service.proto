@@ -16,8 +16,8 @@ service PorageService {
     // GetEntryFromLedger retrieves an entry from the ledger.
     rpc GetEntryFromLedger(GetEntryFromLedgerRequest) returns (GetEntryFromLedgerResponse) {}
 
-    // CloseLedger closes a ledger.
-    rpc CloseLedger(CloseLedgerRequest) returns (google.protobuf.Empty) {}
+    // DeleteLedger closes a ledger.
+    rpc DeleteLedger(DeleteLedgerRequest) returns (google.protobuf.Empty) {}
 
     // LedgerLength returns the length of the ledger.
     rpc LedgerLength(LedgerLengthRequest) returns (LedgerLengthResponse) {}
@@ -56,8 +56,8 @@ message GetEntryFromLedgerResponse {
     bytes payload = 1;
 }
 
-// CloseLedgerRequest is the request message for the CloseLedger RPC.
-message CloseLedgerRequest {
+// DeleteLedgerRequest is the request message for the DeleteLedger RPC.
+message DeleteLedgerRequest {
     uint64 ledger_id = 1;
 }
 

@@ -23,7 +23,7 @@ const (
 	PorageService_CreateLedger_FullMethodName        = "/porageservice.PorageService/CreateLedger"
 	PorageService_AppendEntryOnLedger_FullMethodName = "/porageservice.PorageService/AppendEntryOnLedger"
 	PorageService_GetEntryFromLedger_FullMethodName  = "/porageservice.PorageService/GetEntryFromLedger"
-	PorageService_CloseLedger_FullMethodName         = "/porageservice.PorageService/CloseLedger"
+	PorageService_DeleteLedger_FullMethodName        = "/porageservice.PorageService/DeleteLedger"
 	PorageService_LedgerLength_FullMethodName        = "/porageservice.PorageService/LedgerLength"
 	PorageService_ListLedgers_FullMethodName         = "/porageservice.PorageService/ListLedgers"
 	PorageService_ListWorkers_FullMethodName         = "/porageservice.PorageService/ListWorkers"
@@ -39,8 +39,8 @@ type PorageServiceClient interface {
 	AppendEntryOnLedger(ctx context.Context, in *AppendEntryOnLedgerRequest, opts ...grpc.CallOption) (*AppendEntryOnLedgerResponse, error)
 	// GetEntryFromLedger retrieves an entry from the ledger.
 	GetEntryFromLedger(ctx context.Context, in *GetEntryFromLedgerRequest, opts ...grpc.CallOption) (*GetEntryFromLedgerResponse, error)
-	// CloseLedger closes a ledger.
-	CloseLedger(ctx context.Context, in *CloseLedgerRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	// DeleteLedger closes a ledger.
+	DeleteLedger(ctx context.Context, in *DeleteLedgerRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	// LedgerLength returns the length of the ledger.
 	LedgerLength(ctx context.Context, in *LedgerLengthRequest, opts ...grpc.CallOption) (*LedgerLengthResponse, error)
 	// ListLedgers lists all the ledgers.
@@ -87,10 +87,10 @@ func (c *porageServiceClient) GetEntryFromLedger(ctx context.Context, in *GetEnt
 	return out, nil
 }
 
-func (c *porageServiceClient) CloseLedger(ctx context.Context, in *CloseLedgerRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+func (c *porageServiceClient) DeleteLedger(ctx context.Context, in *DeleteLedgerRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(emptypb.Empty)
-	err := c.cc.Invoke(ctx, PorageService_CloseLedger_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, PorageService_DeleteLedger_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -137,8 +137,8 @@ type PorageServiceServer interface {
 	AppendEntryOnLedger(context.Context, *AppendEntryOnLedgerRequest) (*AppendEntryOnLedgerResponse, error)
 	// GetEntryFromLedger retrieves an entry from the ledger.
 	GetEntryFromLedger(context.Context, *GetEntryFromLedgerRequest) (*GetEntryFromLedgerResponse, error)
-	// CloseLedger closes a ledger.
-	CloseLedger(context.Context, *CloseLedgerRequest) (*emptypb.Empty, error)
+	// DeleteLedger closes a ledger.
+	DeleteLedger(context.Context, *DeleteLedgerRequest) (*emptypb.Empty, error)
 	// LedgerLength returns the length of the ledger.
 	LedgerLength(context.Context, *LedgerLengthRequest) (*LedgerLengthResponse, error)
 	// ListLedgers lists all the ledgers.
@@ -164,8 +164,8 @@ func (UnimplementedPorageServiceServer) AppendEntryOnLedger(context.Context, *Ap
 func (UnimplementedPorageServiceServer) GetEntryFromLedger(context.Context, *GetEntryFromLedgerRequest) (*GetEntryFromLedgerResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetEntryFromLedger not implemented")
 }
-func (UnimplementedPorageServiceServer) CloseLedger(context.Context, *CloseLedgerRequest) (*emptypb.Empty, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method CloseLedger not implemented")
+func (UnimplementedPorageServiceServer) DeleteLedger(context.Context, *DeleteLedgerRequest) (*emptypb.Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteLedger not implemented")
 }
 func (UnimplementedPorageServiceServer) LedgerLength(context.Context, *LedgerLengthRequest) (*LedgerLengthResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method LedgerLength not implemented")
@@ -251,20 +251,20 @@ func _PorageService_GetEntryFromLedger_Handler(srv interface{}, ctx context.Cont
 	return interceptor(ctx, in, info, handler)
 }
 
-func _PorageService_CloseLedger_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(CloseLedgerRequest)
+func _PorageService_DeleteLedger_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteLedgerRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(PorageServiceServer).CloseLedger(ctx, in)
+		return srv.(PorageServiceServer).DeleteLedger(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: PorageService_CloseLedger_FullMethodName,
+		FullMethod: PorageService_DeleteLedger_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(PorageServiceServer).CloseLedger(ctx, req.(*CloseLedgerRequest))
+		return srv.(PorageServiceServer).DeleteLedger(ctx, req.(*DeleteLedgerRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -343,8 +343,8 @@ var PorageService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _PorageService_GetEntryFromLedger_Handler,
 		},
 		{
-			MethodName: "CloseLedger",
-			Handler:    _PorageService_CloseLedger_Handler,
+			MethodName: "DeleteLedger",
+			Handler:    _PorageService_DeleteLedger_Handler,
 		},
 		{
 			MethodName: "LedgerLength",

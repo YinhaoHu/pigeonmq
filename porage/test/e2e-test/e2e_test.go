@@ -208,7 +208,7 @@ func testListWorkers(ctx context.Context) {
 
 func testCloseEntry(ctx context.Context) {
 	utilities.Logger.Logf("Testing CloseEntry")
-	err := porageClient.CloseLedger(ctx, ledgerID)
+	err := porageClient.DeleteLedger(ctx, ledgerID)
 	utilities.Logger.FatalIfErr(err, "Failed to close ledger")
 
 	ledgerIDList, err := porageClient.ListLedgers(ctx)

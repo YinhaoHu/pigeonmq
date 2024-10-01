@@ -192,7 +192,7 @@ func handleCloseLedger(parts []string, ctx context.Context) {
 		fmt.Printf("Invalid ledger ID: %v\n", err)
 		return
 	}
-	err = porageClient.CloseLedger(ctx, ledgerID)
+	err = porageClient.DeleteLedger(ctx, ledgerID)
 	if err != nil {
 		fmt.Printf("Failed to close ledger: %v\n", status.Convert(err).Message())
 	} else {
