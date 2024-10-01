@@ -3,6 +3,8 @@ _*
 
 # Go applications for experimental purposes
 */cmd/try
+cmd/try
+
 
 # Testing coverage
 coverage
