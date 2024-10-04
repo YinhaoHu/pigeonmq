@@ -12,6 +12,8 @@ High performance is achieved by using the multi level cache mechanism, batching 
 
 This is a study project of mine to learn how to design and implement a distributed messaging system. I try to keep the design simple enough but grasp the core concepts of a distributed messaging system. Scailability, reliability and performance are the main goals of the system, but I intentionally ignore the security and maintenance-friendly for operators which are definitely important in a real-world system.
 
+![PigeonMQ Architecture](./docs/diagrams/output/pigeonmq-architecture.drawio.png)
+
 ## Documentation
 
 The documentations are available in the `docs` directory including the design, frequently asked questions, and more.
