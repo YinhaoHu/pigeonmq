@@ -16,9 +16,8 @@ client, err := pigeonmq.NewClient(etcdServers)
 defer client.Close()
 
 producerOptions := &pigeonmq.ProducerOptions{
-    Topic:         "my-topic",
-    Partition:     0,
-    EtcdEndpoints: etcdServers,
+    Topic:         "my-topic", 
+    HashingScheme: pigeonmq.HashingSchemeMurmurHash
 } 
 producer, err := client.CreateProducer(producerOptions)
 
@@ -67,7 +66,18 @@ for {
 In this section, we prove that the use of PigeonMQ-Admin-CLI provides a reasonable way to administer the PigeonMQ system.
 
 ```bash
-pigeonmq-admin topic create my-topic
-pigeonmq-admin topic list
-pigeonmq-admin topic delete my-topic
+pigeonmq-admin topic create my-topic \
+    --etcd-endpoints localhost:2379 \
+    --partitions 3 \
+    --replication-ensemble 3 \
+    --replication-quorum-write 2 \
+    --replication-quorum-read 2 \
+    --replication-quorum-ack 2 \
+    --retention 1h
+
+pigeonmq-admin topic list \
+    --etcd-endpoints localhost:2379
+
+pigeonmq-admin topic delete my-topic \
+    --etcd-endpoints localhost:2379
 ```

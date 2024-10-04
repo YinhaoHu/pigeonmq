@@ -4,7 +4,13 @@
 
 PiegonMQ is a scalable, reliable and performant messaging system insipired by Apache Pulsar.
 
-This is a study project of mine to learn how to design and implement a distributed messaging system. I try to keep the design simple enough but grasp the core concepts of a distributed messaging system.
+Scaiability is achieved by separating the storage layer from the service layer. The storage layer is designed to be horizontally scalable which will automatically share the loads of the overloaded Poras controlled by Broker. The service layer is designed to be stateless and horizontally scalable by partitioning the topics and partitions across multiple Brokers.
+
+Reliability is achieved by using the Leaderless Replication approach in the storage layer. PigeonMQ ensures that the successfully produced messages satisfies the Quorum Ack condition and eventually satisfied the Quorum Write condition if the world is happy.
+
+High performance is achieved by using the multi level cache mechanism, batching and optimized append-only storage system.
+
+This is a study project of mine to learn how to design and implement a distributed messaging system. I try to keep the design simple enough but grasp the core concepts of a distributed messaging system. Scailability, reliability and performance are the main goals of the system, but I intentionally ignore the security and maintenance-friendly for operators which are definitely important in a real-world system.
 
 ## Architecture
 
@@ -76,7 +82,7 @@ If a Pora is failed:
 
 ### Recovery
 
-When a Pora is failed, a new Pora is chosen to replace the failed one. The new Pora is chosen as a Pora in the cluster who has the most free disk space. It will fetch the entries which are stored in the old Pora from other healthy Poras.
+When a Pora is failed, a new Pora is chosen to replace the failed one. The new Pora is chosen as a Pora in the cluster who is the least-loaded. It will fetch the entries which are stored in the old Pora from other healthy Poras.
 
 ## Service Discovery
 
@@ -91,17 +97,23 @@ func NewClient(etcdEndpoints []string) (*Client, error)
 type MessageID uint64
 
 type Message struct {
-    Key string
+    Key string // Used to partition the messages. 
     Payload []byte
 }
 
 // --- Producer ---
 
+type HashingScheme int
+
+const (
+    HashingSchemeMurmurHash HashingScheme = iota
+)
+
 // CreateTopic creates a new topic with the given topic name.
 type ProducerOptions struct {
     Topic string
-    Partition int
-    EtcdEndpoints []string
+    HashingScheme
+    etcdEndpoints []string
 }
 
 // CreateProducer creates a new producer with the given options.
@@ -123,7 +135,7 @@ func (p *Producer) Close() error
 type ConsumerOptions struct {
     Topic string
     Partition int
-    EtcdEndpoints []string
+    etcdEndpoints []string
 }
 
 // CreateConsumer creates a new consumer with the given topic and partition.
@@ -136,8 +148,8 @@ type Consumer struct {
 
 // Consume consumes the next message from the PigeonMQ system.
 //
-// Block until a message is available.
-func (c *Consumer) Consume() (*Message, error)
+// If there is no message to consume, it will block until a message is available or the timeout is reached.
+func (c *Consumer) Consume(timeout time.Duration) (*Message, error)
 
 // Seek seeks to the given messageID.
 func (c *Consumer) Seek(messageID MessageID) error
@@ -155,6 +167,26 @@ func (c *Consumer) Close() error
 
 PigeonMQ provides the ability to create topic and partitions for users only in PigeonMQ-Admin-CLI. I make this decision to simplify the API design and provide a controlled environment.
 
+### Commands
+
+All the commands are executed in the PigeonMQ-Admin-CLI. Arguments should be checked for validity in the CLI.
+
+- `topic create <topic-name>`: Creates a new topic with the given topic name. Arguments:
+
+  - etcd-endpoints: The etcd endpoints to connect to. Default: `localhost:2379`.
+  - partitions: The number of partitions to create. Default: `1`.
+  - replication-enemble: The number of Poras to replicate the partition. Default: `1`.
+  - replication-quorum-write: The number of Poras to write to form a quorum. Default: `1`.
+  - replication-quorum-read: The number of Poras to read to form a quorum. Default: `1`.
+  - replication-quorum-ack: The number of acks to form a quorum. Default: `1`.
+  - retention-period: The retention period of the messages. Default: `1h`.
+- `topic delete <topic-name>`: Deletes the topic with the given topic name.
+- `topic list`: Lists all the topics.
+- `topic add-partition <topic-name> <n_partition>`: Adds partitions to the topic.
+  - n_partition: The number of partitions to add.
+- `topic remove-partition <topic-name> <partition>`: Removes a partition from the topic.
+  - partition: The partition number to remove.
+
 ## Miscellaneous
 
 ### Assumptions
@@ -162,8 +194,3 @@ PigeonMQ provides the ability to create topic and partitions for users only in P
 For simplicity and to focus on the core concepts of a distributed messaging system, we make the following assumptions:
 
 - The messages stored on disk will not be corrupted.
-
-## `TODO`
-
-- Verify the design by consulting ChatGPT and sample code.
-- Implement the design.
