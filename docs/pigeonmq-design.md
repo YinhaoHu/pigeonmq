@@ -2,7 +2,7 @@
 
 ## Introduction
 
-PiegonMQ is a scalable, reliable and performant messaging system insipired by Apache Pulsar.
+PiegonMQ is a scalable, reliable and performant messaging system inspired by Apache Pulsar, Apache Kafka and Apache BookKeeper.
 
 Scaiability is achieved by separating the storage layer from the service layer. The storage layer is designed to be horizontally scalable which will automatically share the loads of the overloaded Poras controlled by Broker. The service layer is designed to be stateless and horizontally scalable by partitioning the topics and partitions across multiple Brokers.
 
